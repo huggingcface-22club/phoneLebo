@@ -199,7 +199,7 @@ face_lost_threshold = 3.0
 
 ## gripper 설정
 def close_gripper_with_lock(threshold=0.5, max_wait=3.0):
-    print("🔒 그리퍼 닫기 및 위치 고정 시도")
+    print("그리퍼 닫기 및 위치 고정 시도")
     try:
         start_time = time.time()
         prev_pos = bus.read("Present_Position", "gripper", normalize=True)
@@ -212,13 +212,13 @@ def close_gripper_with_lock(threshold=0.5, max_wait=3.0):
 
             # 변화가 거의 없으면 물체가 끼인 것으로 간주
             if delta < threshold:
-                print(f"🛑 위치 고정: {current_pos:.2f} (변화량: {delta:.2f})")
+                print(f"위치 고정: {current_pos:.2f} (변화량: {delta:.2f})")
                 break
 
             prev_pos = current_pos
 
             if time.time() - start_time > max_wait:
-                print("⏰ timeout: 물체 없음 또는 정상 닫힘")
+                print("timeout: 물체 없음 또는 정상 닫힘")
                 break
 
         # 모터를 현재 위치에 고정 (토크 유지 상태)
@@ -229,17 +229,17 @@ def close_gripper_with_lock(threshold=0.5, max_wait=3.0):
 def open_gripper_if_safe(threshold=80):
     try:
         grip_pos = bus.read("Present_Position", "gripper", normalize=True)
-        print(f"🔍 현재 gripper 위치: {grip_pos:.2f}")
+        print(f"현재 gripper 위치: {grip_pos:.2f}")
     except RuntimeError as e:
-        print(f"⚠ gripper 위치 읽기 실패 → 열기 생략\n→ {e}")
+        print(f"gripper 위치 읽기 실패 → 열기 생략\n→ {e}")
         return
 
     if grip_pos > threshold:
-        print("✅ 이미 열려 있음 → 생략")
+        print("이미 열려 있음 → 생략")
         return
 
     try:
-        print("🔓 gripper 열기 시도")
+        print("gripper 열기 시도")
         move_motor_smooth("gripper", 100)
     except RuntimeError as e:
         print(f"⚠ gripper 열기 실패 → 과부하 가능성 있음\n→ {e}")
@@ -267,7 +267,7 @@ try:
                     print("↩ 직전 위치로 복귀")
                     face_center = last_face_position
                 else:
-                    print("🏁 기본 자세 복귀 시도")
+                    print("기본 자세 복귀 시도")
                     for name, angle in base_angles.items():
                         move_motor_smooth_init(name, angle)
                 lost_face_start = None
@@ -280,15 +280,16 @@ try:
         roll_angle = r[2]
 
         if -10 <= roll_angle <= 10:
-            print(f"🎯 Roll 정면 유지: {roll_angle:.2f}° → 모터 정지")
+            print(f"Roll 정면 유지: {roll_angle:.2f}° → 모터 정지")
             delta = clamp(0, 0, 0)
         else:
             delta = clamp(roll_angle, -40, 40)
         base_angles["wrist_roll"] = clamp(delta, -40, 40)
-        print(f"🔄 Roll 제어: {roll_angle:.2f}° → wrist_roll {base_angles['wrist_roll']:.2f}°")
+        print(f"Roll 제어: {roll_angle:.2f}° → wrist_roll {base_angles['wrist_roll']:.2f}°")
         move_motor_smooth("wrist_roll", base_angles["wrist_roll"])
 
-
+        base_angles["shoulder_pitch"] = clamp(50, 0, 120)
+        base_angles["elbow_pitch"] = clamp(-60, -45, -120)
 
         x, y = face_center
         in_center_x = frame_width / 3 < x < 2 * frame_width / 3
@@ -330,6 +331,8 @@ except KeyboardInterrupt:
             all_returned = False
 
     if all_returned:
+        cap.release()                      # 카메라 해제
+        cv2.destroyAllWindows()
         open_gripper_if_safe()
         bus.disable_torque()
         bus.disconnect()
