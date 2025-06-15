@@ -157,7 +157,7 @@ base_angles = {
     "shoulder_pitch": 45,
     "elbow_pitch": -45,
     "wrist_pitch": 105,
-    "wrist_roll" : 0,
+    "wrist_roll" : 15,
 }
 
 def clamp(val, min_val, max_val):
@@ -284,7 +284,7 @@ try:
             delta = clamp(0, 0, 0)
         else:
             delta = clamp(roll_angle, -40, 40)
-        base_angles["wrist_roll"] = clamp(delta, -40, 40)
+        base_angles["wrist_roll"] = clamp(delta, -50, 50)
         print(f"Roll 제어: {roll_angle:.2f}° → wrist_roll {base_angles['wrist_roll']:.2f}°")
         move_motor_smooth("wrist_roll", base_angles["wrist_roll"])
 
